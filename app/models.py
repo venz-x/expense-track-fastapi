@@ -1,6 +1,6 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, TIMESTAMP, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import date as date_type
+from datetime import datetime
 from .database import Base
 
 
@@ -18,7 +18,15 @@ class Expense(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     amount: Mapped[int] = mapped_column(nullable= False)
     description: Mapped[str | None] = mapped_column()
-    date: Mapped[date_type] = mapped_column(nullable=False)
+    date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
 
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
     category: Mapped["Category"] = relationship(back_populates="expenses")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
