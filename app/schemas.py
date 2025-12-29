@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 # =======================
 # 1. BASE MODELS 
@@ -11,8 +11,8 @@ class CategoryBase(BaseModel):
 
 class ExpenseBase(BaseModel):
     amount: int
-    description: str
-    date: datetime
+    description: str | None = None
+    date: datetime | None = None
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -43,6 +43,8 @@ class Expense(ExpenseBase):
     category_id: int
     owner_id: int
 
+    date: datetime
+
     model_config = ConfigDict(from_attributes=True)
 
 class Category(CategoryBase):
@@ -64,4 +66,4 @@ class ExpenseWithCategory(Expense):
     category: Category
 
 class CategoryWithExpenses(Category):
-    expenses: List[Expense]
+    expenses: List[Expense] = []
