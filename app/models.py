@@ -10,6 +10,7 @@ class Category(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(unique=True)
 
+    # owner_id: Mapped[int] = 
     expenses: Mapped[list["Expense"]] = relationship(back_populates="category")
 
 class Expense(Base):
