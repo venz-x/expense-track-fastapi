@@ -18,7 +18,7 @@ class Category(Base):
     expenses: Mapped[list["Expense"]] = relationship(back_populates="category")
 
     __table_args__ = (
-        UniqueConstraint("name", "owner_id", name="unique_category_per_user")
+        UniqueConstraint("name", "owner_id", name="unique_category_per_user"),
     )
 
 class Expense(Base):
