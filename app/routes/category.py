@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from .. import schemas, models, database
+from .. import schemas, models, database, oauth2
 
 
 router = APIRouter(
@@ -8,8 +8,8 @@ router = APIRouter(
 )
 
 @router.post('/category', response_model=schemas.Category)
-async def category_create(category: schemas.CategoryCreate, db: AsyncSession = Depends(database.get_db)):
-    new_category = models.Category(**category.model_dump())
+async def category_create(category: schemas.CategoryCreate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    new_category = models.Category(ower_id = current_user.id, **category.model_dump())
 
     db.add(new_category)
 
