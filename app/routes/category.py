@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from .. import schemas, models, database, oauth2
 
@@ -9,7 +11,7 @@ router = APIRouter(
 
 @router.post('/category', response_model=schemas.Category)
 async def category_create(category: schemas.CategoryCreate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
-    new_category = models.Category(ower_id = current_user.id, **category.model_dump())
+    new_category = models.Category(owner_id = current_user.id, **category.model_dump())
 
     db.add(new_category)
 
@@ -17,3 +19,15 @@ async def category_create(category: schemas.CategoryCreate, db: AsyncSession = D
     await db.refresh(new_category)
 
     return new_category
+
+@router.get('/category', response_model=schemas.Category)
+async def get_categories(db: AsyncSession = Depends(database.get_db), curent_user: models.User = Depends(oauth2.get_current_user)):
+    query = (select(models.Category)
+                        .where(models.Category.owner_id == curent_user.id)
+                        .options(selectinload(models.Category.owner))        
+    )
+
+    result = await db.execute(query)
+    category_data = result.scalar_one_or_none()
+
+    return category_data
