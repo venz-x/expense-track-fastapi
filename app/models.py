@@ -14,9 +14,11 @@ class Category(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
 
     # Relationship
-    owner: Mapped["User"] = relationship(back_populates="categories")
-    expenses: Mapped[list["Expense"]] = relationship(back_populates="category")
+    owner: Mapped["User"] = relationship(back_populates="categories", passive_deletes=True)
+    expenses: Mapped[list["Expense"]] = relationship(back_populates="category", passive_deletes=True)
 
+
+    # A Category Name must be unique, BUT only for that specific user.
     __table_args__ = (
         UniqueConstraint("name", "owner_id", name="unique_category_per_user"),
     )
@@ -50,5 +52,5 @@ class User(Base):
     # So no ForeignKey needed incase of categories, as the user is the parent here.
 
     # Relationship
-    categories: Mapped[list["Category"]] = relationship(back_populates="owner")
-    expenses: Mapped[list["Expense"]] = relationship(back_populates="owner")
+    categories: Mapped[list["Category"]] = relationship(back_populates="owner", passive_deletes=True)
+    expenses: Mapped[list["Expense"]] = relationship(back_populates="owner", passive_deletes=True)
