@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,3 +57,23 @@ async def get_category_expenses(id: int, db: AsyncSession = Depends(database.get
     expenses = result.scalars().all()
 
     return expenses
+
+@router.delete("/category/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_category(id: int, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    query = (select(models.Category)
+                        .where(models.Category.owner_id == current_user.id,
+                            models.Category.id == id       
+                        )
+    )
+
+    result = await db.execute(query)
+    category_to_delete = result.scalar()
+
+    if category_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Category with id {id} not found")
+    
+    await db.delete(category_to_delete);
+    await db.commit()
+
+    return None
