@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
-from .. import schemas, models, database, oauth2
+from .. import schemas, models
+from ..deps import DB, CurrentUser
 
 
 router = APIRouter(
@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 @router.post('/expense', response_model=schemas.Expense)
-async def expense_create(expense: schemas.ExpenseCreate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def expense_create(expense: schemas.ExpenseCreate, db: DB, current_user: CurrentUser):
     new_expense = models.Expense(owner_id = current_user.id, **expense.model_dump())
 
     db.add(new_expense)
@@ -21,7 +21,7 @@ async def expense_create(expense: schemas.ExpenseCreate, db: AsyncSession = Depe
     return new_expense
 
 @router.get("/expense", response_model=list[schemas.ExpenseWithCategory])
-async def get_all_expenses(db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def get_all_expenses(db: DB, current_user: CurrentUser):
     query = (select(models.Expense)
                     .where(models.Expense.owner_id == current_user.id)
                     .options(selectinload(models.Expense.category))
@@ -33,7 +33,7 @@ async def get_all_expenses(db: AsyncSession = Depends(database.get_db), current_
     return all_expenses
 
 @router.get("/expense/{id}", response_model=schemas.Expense)
-async def delete_expense(id: int, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def delete_expense(id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Expense)
                         .where(models.Expense.id == id,
                                models.Expense.owner_id == current_user.id
@@ -50,7 +50,7 @@ async def delete_expense(id: int, db: AsyncSession = Depends(database.get_db), c
     return expense
 
 @router.delete("/expense/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_expense(id: int, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def delete_expense(id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Expense)
                         .where(models.Expense.id == id,
                                models.Expense.owner_id == current_user.id
@@ -70,7 +70,7 @@ async def delete_expense(id: int, db: AsyncSession = Depends(database.get_db), c
     return None
 
 @router.patch("/expense/{id}", response_model=schemas.ExpenseWithCategory)
-async def update_expense(id: int, expense_update: schemas.ExpenseUpdate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def update_expense(id: int, expense_update: schemas.ExpenseUpdate, db: DB, current_user: CurrentUser):
     query = (select(models.Expense)
                         .where(models.Expense.owner_id == current_user.id,
                                models.Expense.id == id

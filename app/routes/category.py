@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
-from .. import schemas, models, database, oauth2
-
+from .. import schemas, models
+from ..deps import DB, CurrentUser
 
 router = APIRouter(
     tags=["Category"]
 )
 
 @router.post('/category', response_model=schemas.Category)
-async def category_create(category: schemas.CategoryCreate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def category_create(category: schemas.CategoryCreate, db: DB, current_user: CurrentUser):
     new_category = models.Category(owner_id = current_user.id, **category.model_dump())
 
     db.add(new_category)
@@ -21,9 +20,9 @@ async def category_create(category: schemas.CategoryCreate, db: AsyncSession = D
     return new_category
 
 @router.get('/category', response_model=schemas.Category)
-async def get_categories(db: AsyncSession = Depends(database.get_db), curent_user: models.User = Depends(oauth2.get_current_user)):
+async def get_categories(db: DB, current_user: CurrentUser):
     query = (select(models.Category)
-                        .where(models.Category.owner_id == curent_user.id)
+                        .where(models.Category.owner_id == current_user.id)
                         .options(selectinload(models.Category.owner))        
     )
 
@@ -38,7 +37,7 @@ async def get_categories(db: AsyncSession = Depends(database.get_db), curent_use
 
 # all category and expenses
 @router.get('/category_expenses', response_model=list[schemas.CategoryWithExpenses])
-async def get_categories_expenses(db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def get_categories_expenses(db: DB, current_user: CurrentUser):
     query = (select(models.Category)
                         .where(models.Category.owner_id == current_user.id)
                         .options(selectinload(models.Category.expenses))
@@ -51,7 +50,7 @@ async def get_categories_expenses(db: AsyncSession = Depends(database.get_db), c
 
 # specific category ad expenses
 @router.get("/category/{id}/expense", response_model=list[schemas.Expense])
-async def get_category_expenses(id: int, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def get_category_expenses(id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Expense)
                         .where(models.Expense.owner_id == current_user.id)
                         .where(models.Expense.category_id == id)
@@ -63,7 +62,7 @@ async def get_category_expenses(id: int, db: AsyncSession = Depends(database.get
     return expenses
 
 @router.delete("/category/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_category(id: int, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def delete_category(id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Category)
                         .where(models.Category.owner_id == current_user.id,
                             models.Category.id == id       
@@ -83,7 +82,7 @@ async def delete_category(id: int, db: AsyncSession = Depends(database.get_db), 
     return None
 
 @router.patch("/category/{id}", response_model=schemas.Category)
-async def update_category(id: int, category_update: schemas.CategoryUpdate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+async def update_category(id: int, category_update: schemas.CategoryUpdate, db: DB, current_user: CurrentUser):
     query = (select(models.Category)
                         .where(models.Category.id == id,
                                models.Category.owner_id == current_user.id
