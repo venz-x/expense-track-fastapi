@@ -30,6 +30,10 @@ async def get_categories(db: AsyncSession = Depends(database.get_db), curent_use
     result = await db.execute(query)
     category_data = result.scalar_one_or_none()
 
+    if category_data is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Category data not found")
+
     return category_data
 
 # all category and expenses
@@ -77,3 +81,39 @@ async def delete_category(id: int, db: AsyncSession = Depends(database.get_db), 
     await db.commit()
 
     return None
+
+@router.patch("/category/{id}", response_model=schemas.Category)
+async def update_category(id: int, category_update: schemas.CategoryUpdate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    query = (select(models.Category)
+                        .where(models.Category.id == id,
+                               models.Category.owner_id == current_user.id
+                        )
+    )
+
+    result = await db.execute(query)
+    category_to_update = result.scalar()
+
+    # The Pydantic model 'category_update' received from the API:
+    # category_update = CategoryUpdate(name="New Food")
+
+    if category_to_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Category with id {id} not found")
+    
+    updated_data = category_update.model_dump(exclude_unset=True)
+
+    # Pydantic model converted into a standard Python dictionary.
+    # 'exclude_unset=True' removed any null fields the user didn't send.
+    # update_data is now:  {'name': 'New Food'}
+
+
+    # Python calls .items() on the dictionary:
+    # It creates a list of pairs: [ ('name', 'New Food') ]
+
+    for key, value in updated_data.items():
+        setattr(category_to_update, key, value)
+
+    await db.commit()
+    await db.refresh(category_to_update)
+
+    return category_to_update

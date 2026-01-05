@@ -60,7 +60,18 @@ class User(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 # =======================
-# 4. RELATIONSHIP MODELS
+# 4. Updating
+# =======================
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+
+class ExpenseUpdate(BaseModel):
+    amount: int | None = None
+    description: str | None = None
+    date: datetime | None = None
+
+# =======================
+# 5. RELATIONSHIP MODELS
 # =======================
 class ExpenseWithCategory(Expense):
     category: Category

@@ -68,3 +68,29 @@ async def delete_expense(id: int, db: AsyncSession = Depends(database.get_db), c
     await db.commit()
 
     return None
+
+@router.patch("/expense/{id}", response_model=schemas.ExpenseWithCategory)
+async def update_expense(id: int, expense_update: schemas.ExpenseUpdate, db: AsyncSession = Depends(database.get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+    query = (select(models.Expense)
+                        .where(models.Expense.owner_id == current_user.id,
+                               models.Expense.id == id
+                        )
+                        .options(selectinload(models.Expense.category))
+    )
+
+    result = await db.execute(query)
+    expense_to_update = result.scalar()
+
+    if expense_to_update is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Expense with id {id} not found")
+    
+    updated_data = expense_update.model_dump(exclude_unset=True)
+
+    for key, value in updated_data.items():
+        setattr(expense_to_update, key, value)
+    
+    await db.commit()
+    await db.refresh(expense_to_update)
+
+    return expense_to_update
