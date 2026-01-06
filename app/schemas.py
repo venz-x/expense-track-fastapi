@@ -59,6 +59,10 @@ class User(UserBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class CategoryBreakdown(BaseModel):
+    category_name: str
+    total_amount: int
+
 # =======================
 # 4. Updating
 # =======================
