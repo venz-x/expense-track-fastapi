@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 from .. import schemas, models
 from ..deps import DB, CurrentUser
@@ -21,10 +21,27 @@ async def expense_create(expense: schemas.ExpenseCreate, db: DB, current_user: C
     return new_expense
 
 @router.get("/expense", response_model=list[schemas.ExpenseWithCategory])
-async def get_all_expenses(db: DB, current_user: CurrentUser):
+async def get_all_expenses(
+        db: DB,
+        current_user: CurrentUser,
+        limit: int = 10,
+        offset: int = 0,
+        search: str | None = None
+    ):
+
     query = (select(models.Expense)
                     .where(models.Expense.owner_id == current_user.id)
                     .options(selectinload(models.Expense.category))
+    )
+
+    if search:
+        query = query.where(models.Expense.description.ilike(f"%{search}%"))
+    
+    query = (
+        query
+        .order_by(desc(models.Expense.date))
+        .limit(limit)
+        .offset(offset)
     )
 
     result = await db.execute(query)

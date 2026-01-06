@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 # total amount sum
-@router.get("/calculate_amount")
+@router.get("/calculate_amount", response_model=list[schemas.CategoryBreakdown])
 async def get_category_breakdown(db: DB, current_user: CurrentUser):
     query = (select(models.Category.name.label("category_name"), func.sum(models.Expense.amount).label("total_amount"))
                         .join(models.Category, models.Category.id == models.Expense.category_id)
