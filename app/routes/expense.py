@@ -31,7 +31,7 @@ async def get_all_expenses(
         month: int | None = None,
         year: int | None = None
     ):
-
+    # SELECT * FROM expenses
     query = (select(models.Expense)
                     .where(models.Expense.owner_id == current_user.id)
                     .options(selectinload(models.Expense.category))
@@ -62,6 +62,7 @@ async def get_all_expenses(
 
 @router.get("/expense/{id}", response_model=schemas.Expense)
 async def delete_expense(id: int, db: DB, current_user: CurrentUser):
+    # SELECT * FROM expenses
     query = (select(models.Expense)
                         .where(models.Expense.id == id,
                                models.Expense.owner_id == current_user.id
@@ -79,6 +80,7 @@ async def delete_expense(id: int, db: DB, current_user: CurrentUser):
 
 @router.delete("/expense/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_expense(id: int, db: DB, current_user: CurrentUser):
+    # SELECT * FROM expenses
     query = (select(models.Expense)
                         .where(models.Expense.id == id,
                                models.Expense.owner_id == current_user.id
@@ -99,6 +101,7 @@ async def delete_expense(id: int, db: DB, current_user: CurrentUser):
 
 @router.patch("/expense/{id}", response_model=schemas.ExpenseWithCategory)
 async def update_expense(id: int, expense_update: schemas.ExpenseUpdate, db: DB, current_user: CurrentUser):
+    # SELECT * FROM expenses
     query = (select(models.Expense)
                         .where(models.Expense.owner_id == current_user.id,
                                models.Expense.id == id
