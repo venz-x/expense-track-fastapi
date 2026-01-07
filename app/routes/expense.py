@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, HTTPException
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, extract
 from sqlalchemy.orm import selectinload
+from datetime import datetime
 from .. import schemas, models
 from ..deps import DB, CurrentUser
 
@@ -26,7 +27,9 @@ async def get_all_expenses(
         current_user: CurrentUser,
         limit: int = 10,
         offset: int = 0,
-        search: str | None = None
+        search: str | None = None,
+        month: int | None = None,
+        year: int | None = None
     ):
 
     query = (select(models.Expense)
@@ -37,6 +40,14 @@ async def get_all_expenses(
     if search:
         query = query.where(models.Expense.description.ilike(f"%{search}%"))
     
+    if month:
+        current_year = year or datetime.now().year
+
+        query = query.where(
+            extract('month', models.Expense.date) == month,
+            extract('year', models.Expense.date) == current_year
+        )
+
     query = (
         query
         .order_by(desc(models.Expense.date))
