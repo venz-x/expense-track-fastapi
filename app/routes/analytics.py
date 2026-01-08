@@ -41,7 +41,7 @@ async def get_category_breakdown(db: DB, current_user: CurrentUser):
 async def get_category_breakdown_by_id(id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Category.name.label("category_name"), func.sum(models.Expense.amount).label("total_amount"))
                         .join(models.Category, models.Category.id == models.Expense.category_id)
-                        .where(models.Category.id == id)
+                        .where(models.Category.id == id, models.Category.owner_id == current_user.id)
                         .group_by(models.Category.name)
     )
 
