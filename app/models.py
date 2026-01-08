@@ -16,7 +16,7 @@ class Category(Base):
     # Relationship
     owner: Mapped["User"] = relationship(back_populates="categories", passive_deletes=True)
     expenses: Mapped[list["Expense"]] = relationship(back_populates="category", passive_deletes=True)
-    budgets: Mapped[list["Budget"]] = relationship(back_populates="category", passive_delete=True)
+    budgets: Mapped[list["Budget"]] = relationship(back_populates="category", passive_deletes=True)
 
 
     # A Category Name must be unique, BUT only for that specific user.

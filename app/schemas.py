@@ -17,6 +17,9 @@ class ExpenseBase(BaseModel):
 class UserBase(BaseModel):
     email: EmailStr
 
+class BudgetBase(BaseModel):
+    amount: int
+
 # =======================
 # 2. CREATE MODELS (INPUT)
 # (passwords/secrets)
@@ -33,6 +36,9 @@ class UserCreate(UserBase):
 class LoginBase(BaseModel):
     email: EmailStr
     password: str
+
+class BudgetCreate(BudgetBase):
+    pass
 
 # =======================
 # 3. RESPONSE MODELS (OUTPUT)
@@ -62,6 +68,14 @@ class User(UserBase):
 class CategoryBreakdown(BaseModel):
     category_name: str
     total_amount: int
+
+class Budget(BudgetBase):
+    id: int
+    owner_id: int
+    category_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 # =======================
 # 4. Updating
