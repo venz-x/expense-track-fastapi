@@ -88,6 +88,9 @@ class ExpenseUpdate(BaseModel):
     description: str | None = None
     date: datetime | None = None
 
+class BudgetUpdate(BudgetBase):
+    pass
+
 # =======================
 # 5. RELATIONSHIP MODELS
 # =======================

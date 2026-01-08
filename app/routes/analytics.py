@@ -46,7 +46,7 @@ async def get_category_breakdown_by_id(id: int, db: DB, current_user: CurrentUse
     )
 
     result = await db.execute(query)
-    data = result.mapping().first()
+    data = result.mappings().first()
 
     if not data:
         raise HTTPException(status_code=404, detail="Category not found or has no expenses")

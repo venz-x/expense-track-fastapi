@@ -40,13 +40,14 @@ async def get_all_expenses(
     if search:
         query = query.where(models.Expense.description.ilike(f"%{search}%"))
     
-    if month:
-        current_year = year or datetime.now().year
+    if month and not year:
+        year = datetime.now().year
 
-        query = query.where(
-            extract('month', models.Expense.date) == month,
-            extract('year', models.Expense.date) == current_year
-        )
+    if year:
+        query = query.where(extract('year', models.Expense.date) == year)
+    
+    if month:
+        query = query.where(extract('month', models.Expense.date) == month)
 
     query = (
         query
