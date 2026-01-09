@@ -22,7 +22,7 @@ async def get_category_breakdown(db: DB, current_user: CurrentUser):
     return data
 
 # total amount sum of all category individually
-@router.get("/calculate_amount", response_model=list[schemas.CategoryBreakdown])
+@router.get("/analytics", response_model=list[schemas.CategoryBreakdown])
 async def get_category_breakdown(db: DB, current_user: CurrentUser):
     # SELECT name FROM categories
     query = (select(models.Category.name.label("category_name"), func.sum(models.Expense.amount).label("total_amount"))
@@ -37,11 +37,11 @@ async def get_category_breakdown(db: DB, current_user: CurrentUser):
     return data
 
 # total amount sum of specific category
-@router.get("/calculate_amount/{id}", response_model=schemas.CategoryBreakdown)
-async def get_category_breakdown_by_id(id: int, db: DB, current_user: CurrentUser):
+@router.get("/analytics/{category_id}", response_model=schemas.CategoryBreakdown)
+async def get_category_breakdown_by_id(category_id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Category.name.label("category_name"), func.sum(models.Expense.amount).label("total_amount"))
                         .join(models.Category, models.Category.id == models.Expense.category_id)
-                        .where(models.Category.id == id, models.Category.owner_id == current_user.id)
+                        .where(models.Category.id == category_id, models.Category.owner_id == current_user.id)
                         .group_by(models.Category.name)
     )
 
@@ -52,3 +52,9 @@ async def get_category_breakdown_by_id(id: int, db: DB, current_user: CurrentUse
         raise HTTPException(status_code=404, detail="Category not found or has no expenses")
 
     return data
+
+# @router.get("/analytics/status/{category_id}", response_model=schemas.BudgetStatus)
+# async def get_budget_status(category_id: int, db: DB, current_user: CurrentUser):
+#     query = (select(models.Budget)
+#                         .join(models.Expense, models.Budget.category_id == models.Expense.category_id)
+#     )

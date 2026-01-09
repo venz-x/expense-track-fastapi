@@ -12,10 +12,23 @@ router = APIRouter(
 # Set a budget for A category
 @router.post("/budget/{id}", response_model=schemas.Budget)
 async def create_budget(id: int, budget: schemas.BudgetCreate, db: DB, current_user: CurrentUser):
+    category_query = (select(models.Category)
+                                .where(models.Category.id == id,
+                                        models.Category.owner_id == current_user.id
+                                )
+    )
+
+    result = await db.execute(category_query)
+    category_result = result.scalar()
+
+    if category_result is None:
+        raise HTTPException(status_code=404, detail="Category not found")
+
     query = (select(models.Budget)
                         .where(models.Budget.owner_id == current_user.id,
                             models.Budget.category_id == id
                         )
+                        .options(selectinload(models.Budget.category))
     )
 
     result = await db.execute(query)
@@ -35,6 +48,8 @@ async def create_budget(id: int, budget: schemas.BudgetCreate, db: DB, current_u
 
     await db.commit()
     await db.refresh(new_budget)
+
+    new_budget.category_name = category_result.name
 
     return new_budget
 
@@ -72,3 +87,24 @@ async def update_budget(id: int, budget: schemas.BudgetUpdate, db: DB, current_u
     await db.refresh(budget_to_update)
 
     return budget_to_update
+
+# delete by category id
+@router.delete("/budget/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_budget(id: int, db: DB, current_user: CurrentUser):
+    query = (select(models.Budget)
+                        .where(models.Budget.category_id == id,
+                            models.Budget.owner_id == current_user.id
+                        )
+    )
+
+    result = await db.execute(query)
+    budget_to_delete = result.scalar()
+
+    if budget_to_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Category budget with id {id} not found")
+    
+    await db.delete(budget_to_delete)
+    await db.commit()
+
+    return None

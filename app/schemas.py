@@ -20,6 +20,13 @@ class UserBase(BaseModel):
 class BudgetBase(BaseModel):
     amount: int
 
+class BudgetStatusBase(BaseModel):
+    category: str
+    amount: int
+    spend: int
+    remaining: int
+    status: str
+
 # =======================
 # 2. CREATE MODELS (INPUT)
 # (passwords/secrets)
@@ -73,9 +80,13 @@ class Budget(BudgetBase):
     id: int
     owner_id: int
     category_id: int
+    category_name: str
 
     model_config = ConfigDict(from_attributes=True)
 
+class BudgetStatus(BudgetStatusBase):
+    
+    model_config = ConfigDict(from_attributes=True)
 
 # =======================
 # 4. Updating
