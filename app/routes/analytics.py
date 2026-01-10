@@ -11,7 +11,7 @@ router = APIRouter(
 
 # total amount sum of all category
 @router.get("/calculate_amount_all")
-async def get_category_breakdown(db: DB, current_user: CurrentUser):
+async def get_all_category_breakdown(db: DB, current_user: CurrentUser):
     query = (select(func.sum(models.Expense.amount).label("total_amount"))
                     .where(models.Expense.owner_id == current_user.id)
     )
@@ -23,7 +23,7 @@ async def get_category_breakdown(db: DB, current_user: CurrentUser):
 
 # total amount sum of all category individually
 @router.get("/analytics", response_model=list[schemas.CategoryBreakdown])
-async def get_category_breakdown(db: DB, current_user: CurrentUser):
+async def get_total_category_sum(db: DB, current_user: CurrentUser):
     # SELECT name FROM categories
     query = (select(models.Category.name.label("category_name"), func.sum(models.Expense.amount).label("total_amount"))
                         .join(models.Category, models.Category.id == models.Expense.category_id)
@@ -35,6 +35,23 @@ async def get_category_breakdown(db: DB, current_user: CurrentUser):
     data = result.mappings().all()
 
     return data
+
+# Working here
+@router.get("/analytics/status")
+async def get_budget_status(db: DB, current_user: CurrentUser):
+    query = (select(models.Budget)
+                        .where(models.Budget.owner_id == current_user.id)
+                        .options(selectinload(models.Budget.category))
+    )
+    
+    result = await db.execute(query)
+    status = result.scalars().all()
+
+    if status is None:
+        if not status:
+            raise HTTPException(status_code=404, detail="Category not found or has no budget")
+    
+    return status
 
 # total amount sum of specific category
 @router.get("/analytics/{category_id}", response_model=schemas.CategoryBreakdown)
@@ -52,4 +69,3 @@ async def get_category_breakdown_by_id(category_id: int, db: DB, current_user: C
         raise HTTPException(status_code=404, detail="Category not found or has no expenses")
 
     return data
-
