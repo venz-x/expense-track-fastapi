@@ -10,7 +10,7 @@ router = APIRouter(
 )
 
 # Set a budget for A category
-@router.post("/budget/{id}", response_model=schemas.Budget)
+@router.post("/budget/{id}", response_model=schemas.BudgetWithCategory)
 async def create_budget(id: int, budget: schemas.BudgetCreate, db: DB, current_user: CurrentUser):
     category_query = (select(models.Category)
                                 .where(models.Category.id == id,
@@ -28,7 +28,6 @@ async def create_budget(id: int, budget: schemas.BudgetCreate, db: DB, current_u
                         .where(models.Budget.owner_id == current_user.id,
                             models.Budget.category_id == id
                         )
-                        .options(selectinload(models.Budget.category))
     )
 
     result = await db.execute(query)
@@ -49,29 +48,34 @@ async def create_budget(id: int, budget: schemas.BudgetCreate, db: DB, current_u
     await db.commit()
     await db.refresh(new_budget)
 
-    new_budget.category_name = category_result.name
+    new_budget.category = category_result
 
     return new_budget
 
-@router.get("/budget/{id}", response_model=schemas.Budget)
+@router.get("/budget/{id}", response_model=schemas.BudgetWithCategory)
 async def get_budget(id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Budget)
                         .where(models.Budget.category_id == id,
                                models.Budget.owner_id == current_user.id
                         )
+                        .options(selectinload(models.Budget.category))
     )
 
     result = await db.execute(query)
     data = result.scalar()
 
+    if not data:
+        raise HTTPException(status_code=404, detail="Budget not found")
+
     return data
 
-@router.put("/budget/{id}", response_model=schemas.Budget)
+@router.put("/budget/{id}", response_model=schemas.BudgetWithCategory)
 async def update_budget(id: int, budget: schemas.BudgetUpdate, db: DB, current_user: CurrentUser):
     query = (select(models.Budget)
                         .where(models.Budget.category_id == id,
                                 models.Budget.owner_id == current_user.id
                         )
+                        .options(selectinload(models.Budget.category))
     )
 
     result = await db.execute(query)
@@ -84,7 +88,7 @@ async def update_budget(id: int, budget: schemas.BudgetUpdate, db: DB, current_u
     budget_to_update.amount = budget.amount
 
     await db.commit()
-    await db.refresh(budget_to_update)
+    # await db.refresh(budget_to_update) --> not using the refresh as it will remove the selectinloads category relation data
 
     return budget_to_update
 

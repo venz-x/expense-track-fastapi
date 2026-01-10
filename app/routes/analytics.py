@@ -53,8 +53,3 @@ async def get_category_breakdown_by_id(category_id: int, db: DB, current_user: C
 
     return data
 
-# @router.get("/analytics/status/{category_id}", response_model=schemas.BudgetStatus)
-# async def get_budget_status(category_id: int, db: DB, current_user: CurrentUser):
-#     query = (select(models.Budget)
-#                         .join(models.Expense, models.Budget.category_id == models.Expense.category_id)
-#     )

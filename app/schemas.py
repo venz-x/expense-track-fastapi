@@ -21,7 +21,6 @@ class BudgetBase(BaseModel):
     amount: int
 
 class BudgetStatusBase(BaseModel):
-    category: str
     amount: int
     spend: int
     remaining: int
@@ -80,7 +79,6 @@ class Budget(BudgetBase):
     id: int
     owner_id: int
     category_id: int
-    category_name: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -110,3 +108,9 @@ class ExpenseWithCategory(Expense):
 
 class CategoryWithExpenses(Category):
     expenses: List[Expense] = []
+
+class BudgetWithCategory(Budget):
+    category: Category
+
+class BudgetStatusWithCategory(BudgetStatus):
+    category: Category
