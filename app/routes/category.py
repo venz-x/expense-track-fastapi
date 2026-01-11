@@ -12,6 +12,10 @@ router = APIRouter(
 async def category_create(category: schemas.CategoryCreate, db: DB, current_user: CurrentUser):
     new_category = models.Category(owner_id = current_user.id, **category.model_dump())
 
+    if new_category is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"No input Found")
+
     db.add(new_category)
 
     await db.commit()
@@ -46,6 +50,10 @@ async def get_categories_expenses(db: DB, current_user: CurrentUser):
     result = await db.execute(query)
     category_expense_data = result.scalars().all()
 
+    if category_expense_data is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Category not found")
+
     return category_expense_data
 
 # specific category ad expenses
@@ -58,6 +66,10 @@ async def get_category_expenses(id: int, db: DB, current_user: CurrentUser):
 
     result = await db.execute(query)
     expenses = result.scalars().all()
+
+    if expenses is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Category with id {id} not found")
 
     return expenses
 
