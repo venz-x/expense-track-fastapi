@@ -37,21 +37,40 @@ async def get_total_category_sum(db: DB, current_user: CurrentUser):
     return data
 
 # Working here
-@router.get("/analytics/status")
+@router.get("/analytics/status", response_model=list[schemas.BudgetStatusWithCategory])
 async def get_budget_status(db: DB, current_user: CurrentUser):
-    query = (select(models.Budget)
+    query = (select(models.Budget, func.coalesce(func.sum(models.Expense.amount), 0).label("spend"))
+                        .outerjoin(models.Expense, models.Budget.category_id == models.Expense.category_id)
                         .where(models.Budget.owner_id == current_user.id)
+                        .group_by(models.Budget.id)
                         .options(selectinload(models.Budget.category))
     )
     
     result = await db.execute(query)
-    status = result.scalars().all()
+    status = result.all() # scalars() give BudgetObject, BudgetObject from [(BudgetObject, 500), (BudgetObject, 1500)].
+                          # all() gives a list of tuple [(BudgetObject, 500), (BudgetObject, 1500)]
 
+    
     if status is None:
         if not status:
             raise HTTPException(status_code=404, detail="Category not found or has no budget")
     
-    return status
+    data = []
+    for budget, spend in status:
+        remaining = budget.amount - spend
+
+        status_label = "Over Budget" if remaining < 0 else "Good"
+
+        # inside data[i]  -> e.g data[0]
+        data.append(schemas.BudgetStatusWithCategory(
+            amount = budget.amount,
+            spend = spend,
+            remaining = remaining,
+            status = status_label,
+            category = budget.category
+        ))
+    
+    return data
 
 # total amount sum of specific category
 @router.get("/analytics/{category_id}", response_model=schemas.CategoryBreakdown)
