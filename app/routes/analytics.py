@@ -77,10 +77,13 @@ async def get_budget_status(
     #  and throws away the rest. [BudgetObject, BudgetObject, ...]
     # .all(): Keeps the whole tuple. [(BudgetObject, 500), (BudgetObject, 1500), ...]
                 
+
+
+    if not status:
+        return []
     
-    if status is None:
-        if not status:
-            raise HTTPException(status_code=404, detail="Category not found or has no budget")
+    # status = result.all() returns an empty list [] if nothing is found, NOT None.
+    # So "if status is None" will never be true.
     
     data = []
     for budget, spend in status:
@@ -98,6 +101,61 @@ async def get_budget_status(
         ))
     
     return data
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Pie Chart
+# ----------------------------------------------------------------------------------------------------------------------
+@router.get("/analytics/status/chart")
+async def pie_chart(
+        db: DB,
+        current_user: CurrentUser,
+        month: int | None = None,
+        year: int | None = None,
+    ):
+
+    today = datetime.now()
+
+    if year is None:
+        year = today.year
+    
+    if month is None:
+        month = today.month
+
+    join_query = (
+        (models.Expense.category_id == models.Category.id) &
+        (extract('month', models.Expense.date) == month) &
+        (extract('year', models.Expense.date) == year)
+    )
+
+    query = (select(models.Category.name, func.sum(models.Expense.amount).label("spend"))
+                        .join(models.Expense, join_query)
+                        .where(models.Expense.owner_id == current_user.id)
+                        .group_by(models.Category.name)
+    )
+
+    result = await db.execute(query)
+    data = result.all()
+
+    total_spend = 0
+    for name, spend in data:
+        total_spend += spend
+
+    chart_data = []
+    for name, spend in data:
+
+        if total_spend > 0:
+            percentage = (spend / total_spend) * 100
+        else:
+            percentage = 0
+
+        chart_data.append({
+            "category": name,
+            "spend": spend,
+            "percentage": round(percentage, 2)
+        })
+
+    return chart_data
 
 
 # ----------------------------------------------------------------------------------------------------------------------
