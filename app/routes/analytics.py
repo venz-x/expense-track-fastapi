@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, extract
 from sqlalchemy.orm import selectinload
+from datetime import datetime
 from .. import schemas, models
 from ..deps import DB, CurrentUser
 
@@ -36,20 +37,46 @@ async def get_total_category_sum(db: DB, current_user: CurrentUser):
 
     return data
 
-# Working here
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Get Budget Status Dashboard
+# ----------------------------------------------------------------------------------------------------------------------
 @router.get("/analytics/status", response_model=list[schemas.BudgetStatusWithCategory])
-async def get_budget_status(db: DB, current_user: CurrentUser):
+async def get_budget_status(
+        db: DB,
+        current_user: CurrentUser,
+        month: int | None = None,
+        year: int | None = None,
+    ):
+
+    today = datetime.now()
+
+    if year is None:
+        year = today.year
+    
+    if month is None:
+        month = today.month
+
+    join_query = (
+        (models.Budget.category_id == models.Expense.category_id) &
+        (extract('month', models.Expense.date) == month) &
+        (extract('year', models.Expense.date) == year)
+    )
+
     query = (select(models.Budget, func.coalesce(func.sum(models.Expense.amount), 0).label("spend"))
-                        .outerjoin(models.Expense, models.Budget.category_id == models.Expense.category_id)
+                        .outerjoin(models.Expense, join_query)
                         .where(models.Budget.owner_id == current_user.id)
                         .group_by(models.Budget.id)
                         .options(selectinload(models.Budget.category))
     )
     
     result = await db.execute(query)
-    status = result.all() # scalars() give BudgetObject, BudgetObject from [(BudgetObject, 500), (BudgetObject, 1500)].
-                          # all() gives a list of tuple [(BudgetObject, 500), (BudgetObject, 1500)]
+    status = result.all() 
 
+    # scalars().all() Grabs only the first element of each tuple
+    #  and throws away the rest. [BudgetObject, BudgetObject, ...]
+    # .all(): Keeps the whole tuple. [(BudgetObject, 500), (BudgetObject, 1500), ...]
+                
     
     if status is None:
         if not status:
@@ -72,7 +99,10 @@ async def get_budget_status(db: DB, current_user: CurrentUser):
     
     return data
 
-# total amount sum of specific category
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Get total expense amount sum of specific category
+# ----------------------------------------------------------------------------------------------------------------------
 @router.get("/analytics/{category_id}", response_model=schemas.CategoryBreakdown)
 async def get_category_breakdown_by_id(category_id: int, db: DB, current_user: CurrentUser):
     query = (select(models.Category.name.label("category_name"), func.sum(models.Expense.amount).label("total_amount"))
