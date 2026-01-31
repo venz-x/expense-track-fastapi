@@ -1,0 +1,37 @@
+services:
+    web:
+        build: .
+        ports:
+            - "${APP_PORT:-8000}:8000"
+        volumes:
+            - .:/app
+        depends_on:
+            - db
+        environment:
+            # Override the variables to point to the docker container 'db'
+            - DATABASE_HOSTNAME=${DATABASE_HOSTNAME}
+            - DATABASE_PORT=${DATABASE_PORT}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            - DATABASE_NAME=${DATABASE_NAME}
+            - DATABASE_USERNAME=${DATABASE_USERNAME}
+
+            - SECRET_KEY=${SECRET_KEY}
+            - ALGORITHM=${ALGORITHM}
+            - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+
+    db:
+        image: postgres:15-alpine
+        container_name: expense_db
+        restart: unless-stopped
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        environment:
+            # config database when it starts
+            - POSTGRES_USER=${DATABASE_USERNAME}
+            - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+            - POSTGRES_DB=${DATABASE_NAME}
+        ports:
+            - "${DB_PORT:-5433}:5432"
+
+volumes:
+    postgres_data:
